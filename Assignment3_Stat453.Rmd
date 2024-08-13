@@ -1,0 +1,202 @@
+---
+title: "Assignment#"
+author: "Tian Gao"
+date: "2024-03-07"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\section{Question 1}
+
+```{r cars}
+# Clear the environment
+rm(list = ls())
+
+require("conf.design")
+
+# Define the factors and response variable
+A = rep(c(-1, 1), 8)
+B = rep(c(rep(-1, 2), rep(1, 2)), 4)
+C = rep(c(rep(-1, 4), rep(1, 4)), 2)
+D = c(rep(-1, 8), rep(1, 8))
+y = c(2.45, 3.36, 2.16, 2.29, 2.49, 3.39, 2.32, 2.44, 
+      1.84, 2.24, 1.69, 1.87, 2.29, 2.92, 2.04, 2.03)
+
+# Create a data frame
+credit_card_data <- data.frame(y, A, B, C, D)
+
+# Fit a linear model
+res.lm <- lm(y ~ A * B * C * D, data = credit_card_data)
+
+# Summary of the linear model to check p-values
+summary_res_lm <- summary(res.lm)
+
+# Print the summary
+print(summary_res_lm)
+
+# Alternatively, you can use ANOVA
+res.aov <- aov(y ~ A * B * C * D, data = credit_card_data)
+summary_res_aov <- summary(res.aov)
+
+# Print the ANOVA summary
+print(summary_res_aov)
+
+library(daewr)
+fullnormal(coef(res.lm)[-1],alpha=.05)
+```
+\subsection{Part a}
+From the plot, we can conclude that factor C(Initial interest rate) are not significant.
+\subsection{Part b}
+
+```{r}
+credit_card_data_Reduced <- within(credit_card_data, rm(C))
+
+# Fit an ANOVA model to the reduced dataset
+res.aov_reduced <- aov(y~A*B*D, data=credit_card_data_Reduced)
+summary(res.aov_reduced)
+
+# Fit a linear model to the reduced dataset
+res.lm_reduced <- lm(y~A*B*D, data=credit_card_data_Reduced)
+summary(res.lm_reduced)
+
+
+```
+\subsection{Part c}
+The coefficient for B in the model output is -0.25875. This is the estimate of the main effect of the account-opening fee on the response rate. It means that, all else being equal, introducing an account-opening fee is associated with a decrease in the response rate by 0.25875 units on the scale of the response variable being measured.
+
+\subsection{part D}
+According to the ANOVA summary and the regression output, the account-opening fee (factor B) is significant. The p-value for factor B is 0.00213, which is less than 0.05 , which means there is a statistically significant association between the account-opening fee and the response rate. The "Estimate" value of -0.25875 for B and its corresponding low p-value suggest that the account-opening fee has a significant negative effect on the response rate.
+
+\subsection{part e}
+```{r pressure, echo=FALSE}
+# Create a data frame for the design
+A = rep(c(-1, 1), 8)
+B = rep(c(rep(-1, 2), rep(1, 2)), 4)
+D = c(rep(-1, 8), rep(1, 8))
+y = c(2.45, 3.36, 2.16, 2.29, 2.49, 3.39, 2.32, 2.44, 
+      1.84, 2.24, 1.69, 1.87, 2.29, 2.92, 2.04, 2.03)
+credit_card_data_b <- data.frame(A, B, D, y)
+
+# Calculate the ABC interaction for each run 
+credit_card_data_b$ABD <- with(credit_card_data_b, A * B * D)
+# Assign blocks based on the ABD interaction
+credit_card_data_b$block <- ifelse(credit_card_data_b$ABD == 1, "Block 1", "Block 2")
+# Calculate the mean response for each block
+block_means <- tapply(credit_card_data_b$y, credit_card_data_b$block, mean)
+block_means
+```
+
+\section{Question 2}
+\subsection{Part a}
+```{r}
+treatments <- c("1", "a", "b", "ab", "c", "ac", "bc", "abc", "d", "ad", "bd", "abd", "cd", "acd", "bcd", "abcd")
+replicate1 <- c(90, 74, 81, 83, 77, 81, 88, 73, 98, 72, 87, 85, 99, 79, 87, 80)
+replicate2 <- c(93, 78, 85, 80, 78, 80, 82, 70, 95, 76, 83, 86, 90, 75, 84, 80)
+# Calculating average yields
+average_yields <- (replicate1 + replicate2) / 2
+n <- length(treatments)
+
+# Main effects
+effect_A <- (sum(average_yields[c(2,4,6,8,10,12,14,16)]) - sum(average_yields[c(1,3,5,7,9,11,13,15)])) / (n/2)
+effect_B <- (sum(average_yields[c(3,4,7,8,11,12,15,16)]) - sum(average_yields[c(1,2,5,6,9,10,13,14)])) / (n/2)
+effect_C <- (sum(average_yields[c(5,6,7,8,13,14,15,16)]) - sum(average_yields[c(1,2,3,4,9,10,11,12)])) / (n/2)
+effect_D <- (sum(average_yields[c(9,10,11,12,13,14,15,16)]) - sum(average_yields[c(1,2,3,4,5,6,7,8)])) / (n/2)
+
+
+# Output main effects
+list(A = effect_A, B = effect_B, C = effect_C, D = effect_D)
+```
+
+\subsection{part b}
+```{r}
+# Define the treatment combinations 
+coded_combinations <- expand.grid(A = c(-1, 1), B = c(-1, 1), C = c(-1, 1), D = c(-1, 1))
+coded_combinations$Yield <- average_yields
+
+# Check the data frame
+print(coded_combinations)
+# Create a linear model with all interactions
+model <- lm(Yield ~ A*B*C*D, data = coded_combinations)
+# Summary of the model to see coefficients and statistics
+summary(model)
+# Perform ANOVA analysis
+anova_result <- anova(model)
+# Print the ANOVA table
+print(anova_result)
+
+```
+\subsection{Part C}
+Yield=82.78125-4.53125A-0.65625B-1.34375C+1.96875D+2.03125(AB)+0.34375(AC)-0.28125(BC)-1.09375(AD)-0.09375(BD)+0.84375(CD)-2.59375(ABC)+2.34375(ABD)-0.46875(ACD)-0.46875(BCD)+1.21875(ABCD)
+\subsection{Part D}
+NO, indicated by zero residuals for all observations, suggests an overfitting scenario rather than a meaningful assessment of model adequacy. 
+
+\section{Question3}
+\subsection{Part a}
+B(-8.2045), C(-6.5304), D(-6.0275)
+The larger estimates would be more significant.
+\subsection{part b}
+This would mean that the combined effect of factors A and B is highly significant and should be a primary focus in understanding the system's behavior or in optimizing the response variable.
+
+\section{Question 4}
+
+```{r}
+A = rep(c(-1, 1), times = 16)
+B = rep(c(rep(-1, 2), rep(1, 2)), times = 8)
+C = rep(c(rep(-1, 4), rep(1, 4)), times = 4)
+D = rep(c(rep(-1, 8), rep(1, 8)), times = 2)
+E = rep(c(-1, 1), each = 16)
+y = c(8.11, 5.56, 5.77, 5.82, 9.17, 7.8, 3.23, 5.69, 8.82, 14.23, 9.2, 8.94,
+      8.68, 11.49, 6.25, 9.12, 7.93, 5, 7.47, 12, 9.86, 3.65, 6.4, 11.61,
+      12.43, 17.55, 8.87, 25.38, 13.06, 18.85, 11.78, 26.05)
+# Create the data frame
+experiment_data <- data.frame(A, B, C, D, E, y)
+full_model <- lm(y ~ A*B*C*D*E, data = experiment_data)
+
+
+# Summary of the full model to see coefficients
+summary(full_model)
+# Perform ANOVA analysis
+anova_full_model <- anova(full_model)
+# Print the ANOVA table
+print(anova_full_model)
+fullnormal(coef(full_model)[-1],alpha=.025)
+```
+Througth the plot , the factor C seems to be non-significant terms, so we remove C.
+\subsection{Part b}
+```{r}
+partB_model <- lm(y ~ A*B*D*E, data = experiment_data)
+summary(partB_model)
+anova_partB_model <- anova(partB_model)
+print(anova_partB_model)
+
+#model adequacy checking
+# Plot to check for normality of residuals
+par(mfrow=c(2,2))
+plot(partB_model)
+
+```
+
+\subsection{Part C}
+Factor A: Positive coefficient - High level (+1)
+Factor B: Not significant, but its interactions are significant
+Factor D: Positive coefficient - High level (+1)
+Factor E: Positive coefficient - High level (+1)
+
+\section{Question 5}
+```{r}
+# Determine the block assignment based on the ABCDE interaction
+experiment_data$Block <- with(experiment_data, A * B * C * D * E)
+experiment_data$Block <- ifelse(experiment_data$Block == 1, "Block1", "Block2")
+blocked_model <- lm(y ~ A*B*C*D*E + Block, data = experiment_data)
+# Summary of the blocked model to see coefficients
+summary(blocked_model)
+anova_blocked_model <- anova(blocked_model)
+print(anova_blocked_model)
+
+```
+All 32 residuals are 0, which means the model has a perfect fit to the data with no residual variation. This shows that the model is over-parameterized, there are as many parameters being estimated as there are observations. The significance test are not valid in this test.
+
+
